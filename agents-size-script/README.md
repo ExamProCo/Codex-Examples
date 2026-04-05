@@ -1,0 +1,1 @@
+./check-agents-size.sh ../tic-tac-toe
