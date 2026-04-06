@@ -1,4 +1,10 @@
 import "./style.css";
+import wallTextureUrl from "../output/imagegen/generated-set/wall-stone-seamless.png";
+import floorTextureUrl from "../output/imagegen/generated-set/floor-stone-seamless.png";
+import doorTextureUrl from "../output/imagegen/generated-set/door-blast-front.png";
+import ammoTextureUrl from "../output/imagegen/generated-set/pickup-ammo-icon-transparent.png";
+import healthTextureUrl from "../output/imagegen/generated-set/pickup-health-icon-transparent.png";
+import enemyTextureUrl from "../output/imagegen/generated-set/enemy-guard-portrait.png";
 
 function requiredSelector<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector);
@@ -8,26 +14,20 @@ function requiredSelector<T extends Element>(selector: string): T {
   return element;
 }
 
-function requireWebGl2(target: HTMLCanvasElement): WebGL2RenderingContext {
-  const context = target.getContext("webgl2", { antialias: false });
+function requireCanvas2D(target: HTMLCanvasElement): CanvasRenderingContext2D {
+  const context = target.getContext("2d", { alpha: false });
   if (!context) {
-    throw new Error("WebGL2 not available");
+    throw new Error("2D canvas not available");
   }
+  context.imageSmoothingEnabled = false;
   return context;
 }
-
-const canvas = requiredSelector<HTMLCanvasElement>("#game");
-const screen = requiredSelector<HTMLDivElement>("#screen");
-const healthLabel = requiredSelector<HTMLSpanElement>("#health");
-const ammoLabel = requiredSelector<HTMLSpanElement>("#ammo");
-const objectiveLabel = requiredSelector<HTMLSpanElement>("#objective");
-const messageLabel = requiredSelector<HTMLDivElement>("#message");
-const gl = requireWebGl2(canvas);
 
 type Tile = 0 | 1 | 2 | 3 | 4;
 type PickupKind = "ammo" | "health";
 type EnemyState = "idle" | "chase" | "attack" | "dead";
 type GameMode = "title" | "playing" | "paused" | "victory" | "dead";
+type SpriteKind = PickupKind | "enemy";
 
 interface DoorState {
   x: number;
@@ -66,16 +66,42 @@ interface RayHit {
   depth: number;
   type: Tile;
   side: 0 | 1;
+  textureX: number;
+}
+
+interface Texture {
+  image: HTMLImageElement;
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+interface Textures {
+  wall: Texture;
+  floor: Texture;
+  door: Texture;
+  ammo: Texture;
+  health: Texture;
+  enemy: Texture;
 }
 
 interface SpriteDraw {
-  x: number;
-  y: number;
+  screenX: number;
+  screenY: number;
   width: number;
   height: number;
-  color: [number, number, number, number];
+  texture: Texture;
   depth: number;
+  hurt: boolean;
 }
+
+const canvas = requiredSelector<HTMLCanvasElement>("#game");
+const screen = requiredSelector<HTMLDivElement>("#screen");
+const healthLabel = requiredSelector<HTMLSpanElement>("#health");
+const ammoLabel = requiredSelector<HTMLSpanElement>("#ammo");
+const objectiveLabel = requiredSelector<HTMLSpanElement>("#objective");
+const messageLabel = requiredSelector<HTMLDivElement>("#message");
+const ctx = requireCanvas2D(canvas);
 
 const mapWidth = 16;
 const mapHeight = 16;
@@ -138,6 +164,8 @@ let flashTimer = 0;
 let messageTimer = 0;
 let victoryPulse = 0;
 let lastTimestamp = 0;
+let textures: Textures | null = null;
+let textureLoadError: string | null = null;
 
 const doors = structuredClone(initialDoors);
 const pickups = structuredClone(initialPickups);
@@ -150,92 +178,13 @@ const moveSpeed = 2.8;
 const turnSpeed = 2.4;
 const maxDelta = 0.05;
 
-const vertexShaderSource = `#version 300 es
-in vec2 a_position;
-in vec4 a_color;
-out vec4 v_color;
-void main() {
-  gl_Position = vec4(a_position, 0.0, 1.0);
-  v_color = a_color;
-}
-`;
-
-const fragmentShaderSource = `#version 300 es
-precision mediump float;
-in vec4 v_color;
-out vec4 outColor;
-void main() {
-  outColor = v_color;
-}
-`;
-
-const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
-const positionLocation = gl.getAttribLocation(program, "a_position");
-const colorLocation = gl.getAttribLocation(program, "a_color");
-const vao = gl.createVertexArray();
-const buffer = gl.createBuffer();
-
-if (!vao || !buffer) {
-  throw new Error("Unable to create renderer resources");
-}
-
-gl.bindVertexArray(vao);
-gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-gl.enableVertexAttribArray(positionLocation);
-gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 24, 0);
-gl.enableVertexAttribArray(colorLocation);
-gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 24, 8);
-gl.enable(gl.BLEND);
-gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-gl.bindVertexArray(null);
-
-function createShader(context: WebGL2RenderingContext, type: number, source: string): WebGLShader {
-  const shader = context.createShader(type);
-  if (!shader) {
-    throw new Error("Failed to create shader");
-  }
-
-  context.shaderSource(shader, source);
-  context.compileShader(shader);
-  if (!context.getShaderParameter(shader, context.COMPILE_STATUS)) {
-    const log = context.getShaderInfoLog(shader);
-    context.deleteShader(shader);
-    throw new Error(log ?? "Unknown shader error");
-  }
-
-  return shader;
-}
-
-function createProgram(context: WebGL2RenderingContext, vertexSource: string, fragmentSource: string): WebGLProgram {
-  const vertex = createShader(context, context.VERTEX_SHADER, vertexSource);
-  const fragment = createShader(context, context.FRAGMENT_SHADER, fragmentSource);
-  const nextProgram = context.createProgram();
-  if (!nextProgram) {
-    throw new Error("Failed to create program");
-  }
-
-  context.attachShader(nextProgram, vertex);
-  context.attachShader(nextProgram, fragment);
-  context.linkProgram(nextProgram);
-  context.deleteShader(vertex);
-  context.deleteShader(fragment);
-
-  if (!context.getProgramParameter(nextProgram, context.LINK_STATUS)) {
-    const log = context.getProgramInfoLog(nextProgram);
-    context.deleteProgram(nextProgram);
-    throw new Error(log ?? "Unknown program link error");
-  }
-
-  return nextProgram;
-}
-
-function tileAt(x: number, y: number): Tile {
-  if (x < 0 || y < 0 || x >= mapWidth || y >= mapHeight) {
-    return 1;
-  }
-
-  return map[y * mapWidth + x];
-}
+void loadTextures()
+  .then((loaded) => {
+    textures = loaded;
+  })
+  .catch((error: unknown) => {
+    textureLoadError = error instanceof Error ? error.message : "Unknown texture loading error";
+  });
 
 function doorAt(x: number, y: number): DoorState | undefined {
   return doors.find((door) => door.x === x && door.y === y);
@@ -546,8 +495,8 @@ function castRays(): RayHit[] {
     let sideDistX = dirX < 0 ? (player.x - mapX) * deltaDistX : (mapX + 1 - player.x) * deltaDistX;
     let sideDistY = dirY < 0 ? (player.y - mapY) * deltaDistY : (mapY + 1 - player.y) * deltaDistY;
 
-    let stepX = dirX < 0 ? -1 : 1;
-    let stepY = dirY < 0 ? -1 : 1;
+    const stepX = dirX < 0 ? -1 : 1;
+    const stepY = dirY < 0 ? -1 : 1;
     let side: 0 | 1 = 0;
     let tile: Tile = 1;
 
@@ -576,10 +525,17 @@ function castRays(): RayHit[] {
       ? (mapX - player.x + (1 - stepX) / 2) / dirX
       : (mapY - player.y + (1 - stepY) / 2) / dirY;
 
+    let wallX = side === 0 ? player.y + rawDepth * dirY : player.x + rawDepth * dirX;
+    wallX -= Math.floor(wallX);
+    if ((side === 0 && dirX > 0) || (side === 1 && dirY < 0)) {
+      wallX = 1 - wallX;
+    }
+
     hits.push({
       depth: Math.max(0.001, rawDepth * Math.cos(rayAngle - player.angle)),
       type: tile,
-      side
+      side,
+      textureX: wallX
     });
   }
 
@@ -588,68 +544,136 @@ function castRays(): RayHit[] {
 
 function render(): void {
   resizeCanvas();
-  const rays = castRays();
-  const vertices: number[] = [];
-  pushRect(vertices, -1, 0, 2, 1, [0.16, 0.12, 0.1, 1]);
-  pushRect(vertices, -1, -1, 2, 1, [0.05, 0.05, 0.06, 1]);
+  const width = canvas.width;
+  const height = canvas.height;
 
-  for (let column = 0; column < rays.length; column += 1) {
-    const hit = rays[column];
-    const wallHeight = Math.min(1.6, 1 / hit.depth);
-    const width = 2 / rays.length;
-    const x = -1 + column * width;
-    const y = -wallHeight;
-    const height = wallHeight * 2;
-    const base = colorForTile(hit.type);
-    const fog = Math.max(0.22, 1 - hit.depth / 9.5);
-    const shade = hit.side === 1 ? 0.82 : 1;
-    const color: [number, number, number, number] = [
-      base[0] * fog * shade,
-      base[1] * fog * shade,
-      base[2] * fog * shade,
-      1
-    ];
-    pushRect(vertices, x, y, width + 0.002, height, color);
+  if (!textures) {
+    renderLoadingFrame(width, height);
+    updateHud();
+    return;
   }
 
-  const sprites = collectSprites(rays);
+  const rays = castRays();
+  const frame = ctx.createImageData(width, height);
+  drawCeiling(frame);
+  drawFloor(frame, textures.floor);
+  drawWalls(frame, rays, textures);
+  ctx.putImageData(frame, 0, 0);
+
+  const sprites = collectSprites(rays, textures);
   sprites.sort((left, right) => right.depth - left.depth);
   for (const sprite of sprites) {
-    pushRect(vertices, sprite.x, sprite.y, sprite.width, sprite.height, sprite.color);
+    drawSprite(sprite);
   }
 
+  drawWeapon();
+
   if (flashTimer > 0) {
-    const alpha = flashTimer / 0.18 * 0.28;
-    pushRect(vertices, -1, -1, 2, 2, [0.7, 0.1, 0.08, alpha]);
+    const alpha = (flashTimer / 0.18) * 0.28;
+    ctx.fillStyle = `rgba(179, 26, 20, ${alpha})`;
+    ctx.fillRect(0, 0, width, height);
   }
 
   if (mode === "victory") {
     const pulse = 0.08 + Math.sin(victoryPulse * 6) * 0.04;
-    pushRect(vertices, -1, -1, 2, 2, [0.95, 0.83, 0.32, pulse]);
+    ctx.fillStyle = `rgba(242, 212, 82, ${pulse})`;
+    ctx.fillRect(0, 0, width, height);
   }
 
-  gl.viewport(0, 0, canvas.width, canvas.height);
-  gl.clearColor(0, 0, 0, 1);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-  gl.useProgram(program);
-  gl.bindVertexArray(vao);
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
-  gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 6);
-  gl.bindVertexArray(null);
+  drawCrosshair(width, height);
+  updateHud();
+}
 
-  healthLabel.textContent = `HP ${player.health}`;
-  ammoLabel.textContent = `AMMO ${player.ammo}`;
-  if (mode === "playing") {
-    objectiveLabel.textContent = enemies.every((enemy) => enemy.state === "dead")
-      ? "Head for the exit"
-      : "Find the exit";
+function drawCeiling(frame: ImageData): void {
+  const { data, width, height } = frame;
+  const horizon = Math.floor(height * 0.46);
+
+  for (let y = 0; y < horizon; y += 1) {
+    const shade = y / Math.max(1, horizon - 1);
+    const r = Math.round(16 + shade * 34);
+    const g = Math.round(18 + shade * 22);
+    const b = Math.round(24 + shade * 12);
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      data[index] = r;
+      data[index + 1] = g;
+      data[index + 2] = b;
+      data[index + 3] = 255;
+    }
   }
 }
 
-function collectSprites(rays: RayHit[]): SpriteDraw[] {
+function drawFloor(frame: ImageData, floorTexture: Texture): void {
+  const { data, width, height } = frame;
+  const rayDirX0 = Math.cos(player.angle - fov / 2);
+  const rayDirY0 = Math.sin(player.angle - fov / 2);
+  const rayDirX1 = Math.cos(player.angle + fov / 2);
+  const rayDirY1 = Math.sin(player.angle + fov / 2);
+  const horizon = Math.floor(height * 0.46);
+  const posZ = height * 0.5;
+
+  for (let y = horizon; y < height; y += 1) {
+    const p = y - height / 2;
+    const rowDistance = posZ / Math.max(p, 1);
+    let floorX = player.x + rowDistance * rayDirX0;
+    let floorY = player.y + rowDistance * rayDirY0;
+    const stepX = (rowDistance * (rayDirX1 - rayDirX0)) / width;
+    const stepY = (rowDistance * (rayDirY1 - rayDirY0)) / width;
+    const fog = Math.max(0.24, 1 - rowDistance / 12);
+
+    for (let x = 0; x < width; x += 1) {
+      const sample = sampleTexture(floorTexture, floorX, floorY);
+      const index = (y * width + x) * 4;
+      data[index] = Math.round(sample[0] * fog);
+      data[index + 1] = Math.round(sample[1] * fog);
+      data[index + 2] = Math.round(sample[2] * fog);
+      data[index + 3] = 255;
+      floorX += stepX;
+      floorY += stepY;
+    }
+  }
+}
+
+function drawWalls(frame: ImageData, rays: RayHit[], loadedTextures: Textures): void {
+  const { data, width, height } = frame;
+  const projection = height * 0.9;
+  const columnWidth = width / rays.length;
+
+  for (let column = 0; column < rays.length; column += 1) {
+    const hit = rays[column];
+    const sliceHeight = Math.min(height * 0.92, projection / hit.depth);
+    const startY = Math.max(0, Math.floor(height / 2 - sliceHeight / 2));
+    const endY = Math.min(height, Math.floor(height / 2 + sliceHeight / 2));
+    const startX = Math.floor(column * columnWidth);
+    const endX = Math.min(width, Math.ceil((column + 1) * columnWidth));
+    const texture = textureForTile(hit.type, loadedTextures);
+    const tint = tintForTile(hit.type);
+    const texX = Math.min(texture.width - 1, Math.floor(hit.textureX * texture.width));
+    const fog = Math.max(0.2, 1 - hit.depth / 10);
+    const sideShade = hit.side === 1 ? 0.74 : 1;
+
+    for (let y = startY; y < endY; y += 1) {
+      const v = (y - startY) / Math.max(1, endY - startY - 1);
+      const texY = Math.min(texture.height - 1, Math.floor(v * texture.height));
+      const sampleIndex = (texY * texture.width + texX) * 4;
+      const r = texture.data[sampleIndex] * tint[0] * fog * sideShade;
+      const g = texture.data[sampleIndex + 1] * tint[1] * fog * sideShade;
+      const b = texture.data[sampleIndex + 2] * tint[2] * fog * sideShade;
+      for (let x = startX; x < endX; x += 1) {
+        const index = (y * width + x) * 4;
+        data[index] = Math.min(255, Math.round(r));
+        data[index + 1] = Math.min(255, Math.round(g));
+        data[index + 2] = Math.min(255, Math.round(b));
+        data[index + 3] = 255;
+      }
+    }
+  }
+}
+
+function collectSprites(rays: RayHit[], loadedTextures: Textures): SpriteDraw[] {
   const depthBuffer = rays.map((ray) => ray.depth);
   const draws: SpriteDraw[] = [];
+  const projectionPlane = canvas.width / (2 * Math.tan(fov / 2));
 
   const entities = [
     ...pickups.filter((pickup) => pickup.active).map((pickup) => ({ x: pickup.x, y: pickup.y, kind: pickup.kind, hurt: false })),
@@ -670,72 +694,135 @@ function collectSprites(rays: RayHit[]): SpriteDraw[] {
       continue;
     }
 
-    const projected = angle / (fov / 2);
-    const spriteHeight = Math.min(1.45, 1.15 / Math.max(distance, 0.001));
-    const spriteWidth = spriteHeight * (entity.kind === "enemy" ? 0.56 : 0.42);
-    const centerX = projected;
-    const screenColumn = Math.floor(((centerX + 1) / 2) * depthBuffer.length);
-    if (screenColumn < 0 || screenColumn >= depthBuffer.length) {
-      continue;
-    }
+    const screenX = canvas.width / 2 + Math.tan(angle) * projectionPlane;
+    const screenColumn = Math.max(0, Math.min(depthBuffer.length - 1, Math.floor((screenX / canvas.width) * depthBuffer.length)));
     if (distance > depthBuffer[screenColumn]) {
       continue;
     }
 
+    const spriteScale = entity.kind === "enemy" ? 0.95 : 0.42;
+    const spriteHeight = Math.min(canvas.height * 0.78, (projectionPlane * spriteScale) / Math.max(distance, 0.001));
+    const texture = textureForSprite(entity.kind, loadedTextures);
+    const spriteWidth = spriteHeight * (texture.width / texture.height);
+
     draws.push({
-      x: centerX - spriteWidth / 2,
-      y: -spriteHeight * 0.6,
+      screenX: screenX - spriteWidth / 2,
+      screenY: canvas.height / 2 - spriteHeight * (entity.kind === "enemy" ? 0.62 : 0.18),
       width: spriteWidth,
       height: spriteHeight,
-      color: colorForSprite(entity.kind, entity.hurt),
-      depth: distance
+      texture,
+      depth: distance,
+      hurt: entity.hurt
     });
   }
 
   return draws;
 }
 
-function colorForTile(tile: Tile): [number, number, number] {
+function drawSprite(sprite: SpriteDraw): void {
+  const alpha = Math.max(0.36, 1 - sprite.depth / 14);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(sprite.texture.image, sprite.screenX, sprite.screenY, sprite.width, sprite.height);
+  if (sprite.hurt) {
+    ctx.fillStyle = "rgba(255, 72, 72, 0.32)";
+    ctx.fillRect(sprite.screenX, sprite.screenY, sprite.width, sprite.height);
+  }
+  ctx.restore();
+}
+
+function drawWeapon(): void {
+  const bob = Math.sin(performance.now() * 0.008) * 2;
+  const weaponWidth = canvas.width * 0.18;
+  const weaponHeight = canvas.height * 0.16;
+  const x = canvas.width / 2 - weaponWidth / 2;
+  const y = canvas.height - weaponHeight * 0.82 + bob;
+
+  ctx.fillStyle = "rgba(18, 16, 16, 0.86)";
+  ctx.fillRect(x, y, weaponWidth, weaponHeight);
+  ctx.fillStyle = "#6f7077";
+  ctx.fillRect(x + weaponWidth * 0.26, y + weaponHeight * 0.12, weaponWidth * 0.48, weaponHeight * 0.22);
+  ctx.fillStyle = "#24282c";
+  ctx.fillRect(x + weaponWidth * 0.4, y - weaponHeight * 0.04, weaponWidth * 0.2, weaponHeight * 0.18);
+  ctx.fillStyle = "#2f2318";
+  ctx.fillRect(x + weaponWidth * 0.16, y + weaponHeight * 0.36, weaponWidth * 0.68, weaponHeight * 0.52);
+}
+
+function drawCrosshair(width: number, height: number): void {
+  const cx = width / 2;
+  const cy = height / 2;
+  ctx.strokeStyle = "rgba(240, 230, 196, 0.7)";
+  ctx.lineWidth = Math.max(1, Math.floor(width / 420));
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, cy);
+  ctx.lineTo(cx + 8, cy);
+  ctx.moveTo(cx, cy - 8);
+  ctx.lineTo(cx, cy + 8);
+  ctx.stroke();
+}
+
+function renderLoadingFrame(width: number, height: number): void {
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "#0d1118");
+  gradient.addColorStop(1, "#23160f");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = "#f6ebcc";
+  ctx.font = `${Math.max(18, Math.floor(width * 0.035))}px Trebuchet MS`;
+  ctx.textAlign = "center";
+  ctx.fillText(textureLoadError ? "Texture load failed" : "Loading bunker textures...", width / 2, height / 2);
+  if (textureLoadError) {
+    ctx.font = `${Math.max(12, Math.floor(width * 0.016))}px Trebuchet MS`;
+    ctx.fillText(textureLoadError, width / 2, height / 2 + 24);
+  }
+}
+
+function updateHud(): void {
+  healthLabel.textContent = `HP ${player.health}`;
+  ammoLabel.textContent = `AMMO ${player.ammo}`;
+  if (mode === "playing") {
+    objectiveLabel.textContent = enemies.every((enemy) => enemy.state === "dead")
+      ? "Head for the exit"
+      : "Find the exit";
+  }
+}
+
+function textureForTile(tile: Tile, loadedTextures: Textures): Texture {
+  return tile === 4 ? loadedTextures.door : loadedTextures.wall;
+}
+
+function tintForTile(tile: Tile): [number, number, number] {
   switch (tile) {
     case 2:
-      return [0.63, 0.24, 0.2];
+      return [1, 0.68, 0.68];
     case 3:
-      return [0.1, 0.52, 0.24];
-    case 4:
-      return [0.79, 0.68, 0.24];
+      return [0.65, 1, 0.72];
     default:
-      return [0.35, 0.37, 0.45];
+      return [1, 1, 1];
   }
 }
 
-function colorForSprite(kind: PickupKind | "enemy", hurt: boolean): [number, number, number, number] {
-  if (kind === "ammo") {
-    return [0.24, 0.72, 0.93, 1];
+function textureForSprite(kind: SpriteKind, loadedTextures: Textures): Texture {
+  switch (kind) {
+    case "ammo":
+      return loadedTextures.ammo;
+    case "health":
+      return loadedTextures.health;
+    default:
+      return loadedTextures.enemy;
   }
-  if (kind === "health") {
-    return [0.24, 0.86, 0.42, 1];
-  }
-  return hurt ? [1, 0.42, 0.42, 1] : [0.9, 0.88, 0.82, 1];
 }
 
-function pushRect(
-  output: number[],
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  color: [number, number, number, number]
-): void {
-  const x2 = x + width;
-  const y2 = y + height;
-  output.push(
-    x, y, color[0], color[1], color[2], color[3],
-    x2, y, color[0], color[1], color[2], color[3],
-    x, y2, color[0], color[1], color[2], color[3],
-    x, y2, color[0], color[1], color[2], color[3],
-    x2, y, color[0], color[1], color[2], color[3],
-    x2, y2, color[0], color[1], color[2], color[3]
-  );
+function sampleTexture(texture: Texture, u: number, v: number): [number, number, number] {
+  const texX = mod(Math.floor((u - Math.floor(u)) * texture.width), texture.width);
+  const texY = mod(Math.floor((v - Math.floor(v)) * texture.height), texture.height);
+  const index = (texY * texture.width + texX) * 4;
+  return [texture.data[index], texture.data[index + 1], texture.data[index + 2]];
+}
+
+function mod(value: number, divisor: number): number {
+  return ((value % divisor) + divisor) % divisor;
 }
 
 function normalizeAngle(angle: number): number {
@@ -749,6 +836,14 @@ function normalizeAngle(angle: number): number {
   return next;
 }
 
+function tileAt(x: number, y: number): Tile {
+  if (x < 0 || y < 0 || x >= mapWidth || y >= mapHeight) {
+    return 1;
+  }
+
+  return map[y * mapWidth + x];
+}
+
 function resizeCanvas(): void {
   const ratio = window.devicePixelRatio || 1;
   const width = Math.floor(canvas.clientWidth * ratio);
@@ -756,7 +851,55 @@ function resizeCanvas(): void {
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
+    ctx.imageSmoothingEnabled = false;
   }
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Failed to load ${url}`));
+    image.src = url;
+  });
+}
+
+function toTexture(image: HTMLImageElement): Texture {
+  const surface = document.createElement("canvas");
+  surface.width = image.naturalWidth;
+  surface.height = image.naturalHeight;
+  const surfaceContext = surface.getContext("2d");
+  if (!surfaceContext) {
+    throw new Error("Unable to prepare texture surface");
+  }
+  surfaceContext.drawImage(image, 0, 0);
+  const imageData = surfaceContext.getImageData(0, 0, surface.width, surface.height);
+  return {
+    image,
+    data: imageData.data,
+    width: surface.width,
+    height: surface.height
+  };
+}
+
+async function loadTextures(): Promise<Textures> {
+  const [wall, floor, door, ammo, health, enemy] = await Promise.all([
+    loadImage(wallTextureUrl),
+    loadImage(floorTextureUrl),
+    loadImage(doorTextureUrl),
+    loadImage(ammoTextureUrl),
+    loadImage(healthTextureUrl),
+    loadImage(enemyTextureUrl)
+  ]);
+
+  return {
+    wall: toTexture(wall),
+    floor: toTexture(floor),
+    door: toTexture(door),
+    ammo: toTexture(ammo),
+    health: toTexture(health),
+    enemy: toTexture(enemy)
+  };
 }
 
 document.addEventListener("keydown", (event) => {
@@ -803,5 +946,5 @@ function frame(timestamp: number): void {
   requestAnimationFrame(frame);
 }
 
-showPanel("WOLFSTEIN", "Experimental WebGL raycaster", "Enter the bunker");
+showPanel("WOLFSTEIN", "Textured bunker raycaster", "Enter the bunker");
 requestAnimationFrame(frame);
