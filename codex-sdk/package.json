@@ -1,0 +1,12 @@
+{
+  "name": "codex-sdk-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "codex:example": "node examples/codex-official-sdk.mjs"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "0.46.0"
+  }
+}
