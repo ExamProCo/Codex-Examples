@@ -1,0 +1,12 @@
+{
+  "name": "openai-sdk-image-generation-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:image": "node examples/generate-image.mjs"
+  },
+  "dependencies": {
+    "openai": "^6.33.0"
+  }
+}
