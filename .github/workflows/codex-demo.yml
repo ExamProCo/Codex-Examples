@@ -1,0 +1,48 @@
+name: Codex Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      focus:
+        description: What Codex should focus on in this repository
+        required: false
+        default: "Give me a quick tour of the examples in this repo."
+
+jobs:
+  codex-demo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Run Codex
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          output-file: codex-demo-summary.md
+          prompt: |
+            You are generating a short demo report for GitHub Actions.
+
+            Repository: ${{ github.repository }}
+            Triggered by: ${{ github.actor }}
+            Request: ${{ github.event.inputs.focus }}
+
+            Look through this repository and produce a concise markdown report with:
+            1. A one-paragraph summary of what this repo contains.
+            2. Three interesting example folders worth opening first.
+            3. One suggested next demo a user could run.
+
+            Keep the output short, clear, and presentation-friendly.
+
+      - name: Add report to job summary
+        run: cat codex-demo-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-demo-summary
+          path: codex-demo-summary.md
