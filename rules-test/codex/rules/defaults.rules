@@ -1,0 +1,14 @@
+prefix_rule(
+    pattern = ["curl"],
+    decision = "forbidden",
+    justification = "HTTP access via `curl` is blocked. Use another approved tool or test helper instead.",
+    match = [
+        "curl http://127.0.0.1:4567/",
+        "curl -X POST http://127.0.0.1:4567/echo",
+        "curl https://example.com",
+    ],
+    not_match = [
+        "wget http://127.0.0.1:4567/",
+        "bundle exec ruby app.rb",
+    ],
+)

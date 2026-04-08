@@ -1,0 +1,4 @@
+approval_policy = "untrusted"
+sandbox_mode = "read-only"
+web_search = "disabled"
+network_access = true

@@ -1,0 +1,580 @@
+{
+  "workspace": {
+    "id": "ws-001",
+    "name": "Northstar Studio",
+    "createdAt": "2026-01-05T09:00:00Z"
+  },
+  "users": [
+    {
+      "id": "usr-001",
+      "name": "Maya Chen",
+      "email": "maya.chen@northstar.test",
+      "role": "Project Manager",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Maya%20Chen",
+      "active": true
+    },
+    {
+      "id": "usr-002",
+      "name": "Jordan Alvarez",
+      "email": "jordan.alvarez@northstar.test",
+      "role": "Frontend Developer",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Jordan%20Alvarez",
+      "active": true
+    },
+    {
+      "id": "usr-003",
+      "name": "Priya Nair",
+      "email": "priya.nair@northstar.test",
+      "role": "Backend Developer",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Priya%20Nair",
+      "active": true
+    },
+    {
+      "id": "usr-004",
+      "name": "Ethan Brooks",
+      "email": "ethan.brooks@northstar.test",
+      "role": "UI/UX Designer",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Ethan%20Brooks",
+      "active": true
+    },
+    {
+      "id": "usr-005",
+      "name": "Sofia Kim",
+      "email": "sofia.kim@northstar.test",
+      "role": "QA Engineer",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Sofia%20Kim",
+      "active": true
+    },
+    {
+      "id": "usr-006",
+      "name": "Noah Patel",
+      "email": "noah.patel@northstar.test",
+      "role": "Data Analyst",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Noah%20Patel",
+      "active": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "prj-001",
+      "name": "Client Portal Revamp",
+      "code": "CPR",
+      "description": "Modernize the client dashboard, billing views, and account workflows.",
+      "status": "in-progress",
+      "ownerId": "usr-001",
+      "teamMemberIds": [
+        "usr-001",
+        "usr-002",
+        "usr-003",
+        "usr-004",
+        "usr-005"
+      ],
+      "startDate": "2026-01-12",
+      "dueDate": "2026-05-20",
+      "progress": 68
+    },
+    {
+      "id": "prj-002",
+      "name": "Mobile Sprint Dashboard",
+      "code": "MSD",
+      "description": "Build a mobile-first sprint summary tool for internal delivery teams.",
+      "status": "planning",
+      "ownerId": "usr-001",
+      "teamMemberIds": [
+        "usr-001",
+        "usr-002",
+        "usr-004",
+        "usr-006"
+      ],
+      "startDate": "2026-03-01",
+      "dueDate": "2026-06-15",
+      "progress": 24
+    },
+    {
+      "id": "prj-003",
+      "name": "Ops Reporting Automation",
+      "code": "ORA",
+      "description": "Automate weekly operational KPI reporting and stakeholder summaries.",
+      "status": "at-risk",
+      "ownerId": "usr-006",
+      "teamMemberIds": [
+        "usr-001",
+        "usr-003",
+        "usr-005",
+        "usr-006"
+      ],
+      "startDate": "2026-02-10",
+      "dueDate": "2026-04-30",
+      "progress": 51
+    }
+  ],
+  "milestones": [
+    {
+      "id": "mil-001",
+      "projectId": "prj-001",
+      "title": "UX Approval",
+      "status": "completed",
+      "dueDate": "2026-02-05"
+    },
+    {
+      "id": "mil-002",
+      "projectId": "prj-001",
+      "title": "Beta Release",
+      "status": "in-progress",
+      "dueDate": "2026-04-18"
+    },
+    {
+      "id": "mil-003",
+      "projectId": "prj-002",
+      "title": "Product Discovery",
+      "status": "in-progress",
+      "dueDate": "2026-04-25"
+    },
+    {
+      "id": "mil-004",
+      "projectId": "prj-002",
+      "title": "Prototype Sign-off",
+      "status": "pending",
+      "dueDate": "2026-05-12"
+    },
+    {
+      "id": "mil-005",
+      "projectId": "prj-003",
+      "title": "Data Pipeline Ready",
+      "status": "blocked",
+      "dueDate": "2026-04-12"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "tsk-001",
+      "projectId": "prj-001",
+      "milestoneId": "mil-001",
+      "title": "Audit existing dashboard components",
+      "description": "Document reusable UI patterns and identify gaps in the current design system.",
+      "status": "done",
+      "priority": "medium",
+      "assigneeId": "usr-004",
+      "reporterId": "usr-001",
+      "createdAt": "2026-01-12T10:15:00Z",
+      "dueDate": "2026-01-18",
+      "estimateHours": 6,
+      "tags": [
+        "design",
+        "audit"
+      ]
+    },
+    {
+      "id": "tsk-002",
+      "projectId": "prj-001",
+      "milestoneId": "mil-001",
+      "title": "Map billing workflow edge cases",
+      "description": "Capture failed payment, refund, and expired card scenarios for the portal flow.",
+      "status": "done",
+      "priority": "high",
+      "assigneeId": "usr-001",
+      "reporterId": "usr-001",
+      "createdAt": "2026-01-13T09:20:00Z",
+      "dueDate": "2026-01-21",
+      "estimateHours": 5,
+      "tags": [
+        "discovery",
+        "billing"
+      ]
+    },
+    {
+      "id": "tsk-003",
+      "projectId": "prj-001",
+      "milestoneId": "mil-002",
+      "title": "Build account overview widgets",
+      "description": "Implement responsive summary cards for invoices, usage, and support tickets.",
+      "status": "in-progress",
+      "priority": "high",
+      "assigneeId": "usr-002",
+      "reporterId": "usr-001",
+      "createdAt": "2026-02-02T11:30:00Z",
+      "dueDate": "2026-04-10",
+      "estimateHours": 18,
+      "tags": [
+        "frontend",
+        "dashboard"
+      ]
+    },
+    {
+      "id": "tsk-004",
+      "projectId": "prj-001",
+      "milestoneId": "mil-002",
+      "title": "Create billing summary API",
+      "description": "Expose invoice totals, overdue balances, and payment status in one endpoint.",
+      "status": "in-progress",
+      "priority": "high",
+      "assigneeId": "usr-003",
+      "reporterId": "usr-001",
+      "createdAt": "2026-02-04T13:05:00Z",
+      "dueDate": "2026-04-11",
+      "estimateHours": 20,
+      "tags": [
+        "backend",
+        "api",
+        "billing"
+      ]
+    },
+    {
+      "id": "tsk-005",
+      "projectId": "prj-001",
+      "milestoneId": "mil-002",
+      "title": "Finalize portal color accessibility pass",
+      "description": "Review contrast and state color usage across revised portal screens.",
+      "status": "review",
+      "priority": "medium",
+      "assigneeId": "usr-004",
+      "reporterId": "usr-001",
+      "createdAt": "2026-02-20T14:40:00Z",
+      "dueDate": "2026-04-08",
+      "estimateHours": 7,
+      "tags": [
+        "design",
+        "accessibility"
+      ]
+    },
+    {
+      "id": "tsk-006",
+      "projectId": "prj-001",
+      "milestoneId": "mil-002",
+      "title": "Regression test invoice filters",
+      "description": "Verify filtering by paid, overdue, and failed states across browsers.",
+      "status": "todo",
+      "priority": "medium",
+      "assigneeId": "usr-005",
+      "reporterId": "usr-001",
+      "createdAt": "2026-03-03T08:55:00Z",
+      "dueDate": "2026-04-14",
+      "estimateHours": 8,
+      "tags": [
+        "qa",
+        "billing",
+        "regression"
+      ]
+    },
+    {
+      "id": "tsk-007",
+      "projectId": "prj-001",
+      "milestoneId": "mil-002",
+      "title": "Add empty states for support tab",
+      "description": "Design and implement zero-data states for new accounts with no tickets.",
+      "status": "done",
+      "priority": "low",
+      "assigneeId": "usr-002",
+      "reporterId": "usr-004",
+      "createdAt": "2026-03-09T16:10:00Z",
+      "dueDate": "2026-04-16",
+      "estimateHours": 4,
+      "tags": [
+        "frontend",
+        "ux"
+      ]
+    },
+    {
+      "id": "tsk-008",
+      "projectId": "prj-002",
+      "milestoneId": "mil-003",
+      "title": "Interview delivery leads",
+      "description": "Collect reporting needs, notification preferences, and current pain points.",
+      "status": "done",
+      "priority": "high",
+      "assigneeId": "usr-001",
+      "reporterId": "usr-001",
+      "createdAt": "2026-03-02T10:00:00Z",
+      "dueDate": "2026-03-10",
+      "estimateHours": 6,
+      "tags": [
+        "research",
+        "stakeholders"
+      ]
+    },
+    {
+      "id": "tsk-009",
+      "projectId": "prj-002",
+      "milestoneId": "mil-003",
+      "title": "Draft mobile navigation concepts",
+      "description": "Explore bottom-tab and stacked navigation options for sprint views.",
+      "status": "done",
+      "priority": "medium",
+      "assigneeId": "usr-004",
+      "reporterId": "usr-001",
+      "createdAt": "2026-03-11T12:25:00Z",
+      "dueDate": "2026-04-09",
+      "estimateHours": 10,
+      "tags": [
+        "design",
+        "mobile"
+      ]
+    },
+    {
+      "id": "tsk-010",
+      "projectId": "prj-002",
+      "milestoneId": "mil-003",
+      "title": "Create sprint metrics sample dataset",
+      "description": "Generate realistic burndown, cycle time, and blocked work examples.",
+      "status": "review",
+      "priority": "medium",
+      "assigneeId": "usr-006",
+      "reporterId": "usr-001",
+      "createdAt": "2026-03-12T09:45:00Z",
+      "dueDate": "2026-04-07",
+      "estimateHours": 9,
+      "tags": [
+        "data",
+        "analytics",
+        "mock-data"
+      ]
+    },
+    {
+      "id": "tsk-011",
+      "projectId": "prj-002",
+      "milestoneId": "mil-004",
+      "title": "Prototype mobile sprint summary cards",
+      "description": "Implement tappable summary cards for team velocity and blocker counts.",
+      "status": "todo",
+      "priority": "high",
+      "assigneeId": "usr-002",
+      "reporterId": "usr-004",
+      "createdAt": "2026-03-18T15:00:00Z",
+      "dueDate": "2026-04-24",
+      "estimateHours": 14,
+      "tags": [
+        "frontend",
+        "mobile",
+        "prototype"
+      ]
+    },
+    {
+      "id": "tsk-012",
+      "projectId": "prj-002",
+      "milestoneId": "mil-004",
+      "title": "Define push alert rules",
+      "description": "Document threshold-based alerts for delayed tasks and sprint risk.",
+      "status": "todo",
+      "priority": "medium",
+      "assigneeId": "usr-001",
+      "reporterId": "usr-006",
+      "createdAt": "2026-03-20T11:50:00Z",
+      "dueDate": "2026-04-28",
+      "estimateHours": 5,
+      "tags": [
+        "product",
+        "notifications"
+      ]
+    },
+    {
+      "id": "tsk-013",
+      "projectId": "prj-003",
+      "milestoneId": "mil-005",
+      "title": "Inventory KPI source systems",
+      "description": "List owners, refresh cadence, and data availability for each reporting source.",
+      "status": "done",
+      "priority": "high",
+      "assigneeId": "usr-006",
+      "reporterId": "usr-001",
+      "createdAt": "2026-02-11T08:35:00Z",
+      "dueDate": "2026-02-18",
+      "estimateHours": 7,
+      "tags": [
+        "data",
+        "discovery"
+      ]
+    },
+    {
+      "id": "tsk-014",
+      "projectId": "prj-003",
+      "milestoneId": "mil-005",
+      "title": "Build warehouse sync job",
+      "description": "Load support, sales, and delivery metrics into the reporting model nightly.",
+      "status": "blocked",
+      "priority": "high",
+      "assigneeId": "usr-003",
+      "reporterId": "usr-006",
+      "createdAt": "2026-02-20T14:10:00Z",
+      "dueDate": "2026-04-09",
+      "estimateHours": 22,
+      "tags": [
+        "backend",
+        "etl",
+        "data-pipeline"
+      ]
+    },
+    {
+      "id": "tsk-015",
+      "projectId": "prj-003",
+      "milestoneId": "mil-005",
+      "title": "Document data quality checks",
+      "description": "Define freshness, completeness, and anomaly rules for KPI snapshots.",
+      "status": "in-progress",
+      "priority": "medium",
+      "assigneeId": "usr-005",
+      "reporterId": "usr-006",
+      "createdAt": "2026-03-01T09:15:00Z",
+      "dueDate": "2026-04-13",
+      "estimateHours": 11,
+      "tags": [
+        "qa",
+        "data",
+        "validation"
+      ]
+    },
+    {
+      "id": "tsk-016",
+      "projectId": "prj-003",
+      "milestoneId": "mil-005",
+      "title": "Prepare stakeholder report template",
+      "description": "Draft a weekly summary layout with KPI highlights and exception notes.",
+      "status": "review",
+      "priority": "medium",
+      "assigneeId": "usr-006",
+      "reporterId": "usr-001",
+      "createdAt": "2026-03-07T13:35:00Z",
+      "dueDate": "2026-04-08",
+      "estimateHours": 8,
+      "tags": [
+        "reporting",
+        "template"
+      ]
+    },
+    {
+      "id": "tsk-017",
+      "projectId": "prj-003",
+      "milestoneId": "mil-005",
+      "title": "Confirm access to finance exports",
+      "description": "Coordinate with finance to unblock historical revenue import access.",
+      "status": "blocked",
+      "priority": "high",
+      "assigneeId": "usr-001",
+      "reporterId": "usr-003",
+      "createdAt": "2026-03-14T10:05:00Z",
+      "dueDate": "2026-04-07",
+      "estimateHours": 3,
+      "tags": [
+        "dependency",
+        "finance",
+        "access"
+      ]
+    },
+    {
+      "id": "tsk-018",
+      "projectId": "prj-001",
+      "milestoneId": "mil-002",
+      "title": "Write portal beta release notes",
+      "description": "Prepare feature highlights, known issues, and onboarding guidance for beta users.",
+      "status": "done",
+      "priority": "low",
+      "assigneeId": "usr-001",
+      "reporterId": "usr-001",
+      "createdAt": "2026-03-22T17:20:00Z",
+      "dueDate": "2026-04-17",
+      "estimateHours": 4,
+      "tags": [
+        "release",
+        "documentation"
+      ]
+    }
+  ],
+  "comments": [
+    {
+      "id": "cmt-001",
+      "taskId": "tsk-003",
+      "authorId": "usr-004",
+      "body": "Widget hierarchy looks good. Keep room for a compact mobile summary state.",
+      "createdAt": "2026-03-28T10:10:00Z"
+    },
+    {
+      "id": "cmt-002",
+      "taskId": "tsk-004",
+      "authorId": "usr-003",
+      "body": "Waiting on final invoice field mapping before I lock the response shape.",
+      "createdAt": "2026-04-01T15:45:00Z"
+    },
+    {
+      "id": "cmt-003",
+      "taskId": "tsk-010",
+      "authorId": "usr-001",
+      "body": "Use one high-performing team and one struggling team in the sample data.",
+      "createdAt": "2026-04-03T09:05:00Z"
+    },
+    {
+      "id": "cmt-004",
+      "taskId": "tsk-014",
+      "authorId": "usr-006",
+      "body": "Pipeline is blocked until finance exports are approved for historical backfill.",
+      "createdAt": "2026-04-04T11:30:00Z"
+    },
+    {
+      "id": "cmt-005",
+      "taskId": "tsk-016",
+      "authorId": "usr-005",
+      "body": "Add a section for data anomalies so leadership knows when a metric is incomplete.",
+      "createdAt": "2026-04-05T14:15:00Z"
+    }
+  ],
+  "activity": [
+    {
+      "id": "act-001",
+      "entityType": "task",
+      "entityId": "tsk-005",
+      "action": "moved-to-review",
+      "actorId": "usr-004",
+      "createdAt": "2026-04-04T10:20:00Z"
+    },
+    {
+      "id": "act-002",
+      "entityType": "task",
+      "entityId": "tsk-010",
+      "action": "updated-sample-dataset",
+      "actorId": "usr-006",
+      "createdAt": "2026-04-05T09:40:00Z"
+    },
+    {
+      "id": "act-003",
+      "entityType": "milestone",
+      "entityId": "mil-002",
+      "action": "progress-reviewed",
+      "actorId": "usr-001",
+      "createdAt": "2026-04-05T16:30:00Z"
+    },
+    {
+      "id": "act-004",
+      "entityType": "task",
+      "entityId": "tsk-017",
+      "action": "marked-blocked",
+      "actorId": "usr-001",
+      "createdAt": "2026-04-06T08:15:00Z"
+    },
+    {
+      "id": "act-005",
+      "entityType": "project",
+      "entityId": "prj-003",
+      "action": "risk-status-escalated",
+      "actorId": "usr-006",
+      "createdAt": "2026-04-06T09:10:00Z"
+    }
+  ],
+  "stats": {
+    "totalUsers": 6,
+    "totalProjects": 3,
+    "totalMilestones": 5,
+    "totalTasks": 18,
+    "tasksByStatus": {
+      "blocked": 2,
+      "done": 7,
+      "in-progress": 3,
+      "review": 3,
+      "todo": 3
+    },
+    "projectsByStatus": {
+      "planning": 1,
+      "in-progress": 1,
+      "at-risk": 1
+    },
+    "overdueTasks": 0,
+    "completedTasks": 7
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Task JSON Manager"
+  short_description: "Manage tasks in project-management-data.json"
+  default_prompt: "Use $project-task-json-manager to add, update, find, or delete tasks in project-management-data.json."
